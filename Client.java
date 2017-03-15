@@ -63,7 +63,7 @@ class Send{
 
 
 public class Client {
-	
+	//Call this method when u want your client to act as server
 	public static void makeServer(int port) {
 		
 		System.out.println("Listeing on port" + port);
@@ -96,6 +96,7 @@ public class Client {
 		}
 	}
 	
+	//Call this method when u want to connect to the other client
 	public  static  void connectToClient(int clientPort){
 		
 		
@@ -119,22 +120,23 @@ public class Client {
 					
 					public void run(){
 						try{
-							
+							//Get random number and assign it as the port number of the client
 							Random rm= new Random();
 							
 							int port = rm.nextInt(50) + 1;
 							if(port < 1000){
 								port+=4000;
 							}
-							//Connect to the indexing server and send the data.
-							//Socket client = new Socket("localhost",4000);
+							
+							
+							//Create an object to send and initialize the object to facilitate that transport 
 							Foo foo = new Foo(port);
 							Send send= new Send();
 							
+							//Description on the method
 							send.sendObject(port,foo);
 							
-							
-							
+							//Initialize the port as final so as to pass in the thread so as to make it run on different thread.
 							final int finalPort = port;
 							
 							new Thread(){
@@ -144,9 +146,12 @@ public class Client {
 							}.start();
 							
 							System.out.println("After Making Server"); 
+							//Sleep so that all the client get registered on the index server
 							sleep(1000);
 							
+							//Get the port of other client.
 							int clientPort = send.getOtherClients(foo);
+							
 							if(clientPort == 0){
 								System.out.println("No client Available");
 							}else{
@@ -154,7 +159,7 @@ public class Client {
 							}	
 							
 						}catch(Exception e){
-							System.out.println(e);
+							System.out.println(e); //catch any error in the above process
 							
 						}
 					}

@@ -2,6 +2,7 @@ import java.util.*;
 import java.net.*;
 import java.io.*;
 //The Main Server Class
+
 class Foo implements Serializable{
 	int port;
 	int getOther;
@@ -10,6 +11,7 @@ class Foo implements Serializable{
 		this.port= id;
 	}
 }
+
 class MainServer {
 	List<Integer> clientsAddresses = new ArrayList<Integer>();
 	
