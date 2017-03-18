@@ -2,11 +2,11 @@ import java.util.*;
 import java.net.*;
 import java.io.*;
 
-class Foo implements Serializable{
+class ClientRequestAndResponseInformation implements Serializable{
 	int port;
-	int getOther; //0 means do not get other client address whereas 1 means to get other client address
+	int getOtherClient; //0 means do not get other client address whereas 1 means to get other client address
 	
-	public Foo(int id){
+	public ClientRequestAndResponseInformation(int id){
 		this.port= id;
 	}
 }
@@ -18,14 +18,14 @@ class Send{
 	}
 	
 	
-	public synchronized void sendObject(int port,Foo foo){
+	public synchronized void sendObject(int port,ClientRequestAndResponseInformation clientRequestAndResponseInformation){
 		
 		try{
 			
 			Socket client= new Socket("localhost",4000);
 			OutputStream outToServer = client.getOutputStream();
 	     	ObjectOutputStream out = new ObjectOutputStream(outToServer);
-			foo.getOther=0;
+			clientRequestAndResponseInformation.getOtherClient=0;
 		 	out.writeObject(foo);
 			out.flush();
 			out.close();
@@ -37,12 +37,12 @@ class Send{
 		
 	}
 	
-	public int getOtherClients(Foo foo){
+	public synchronized int getOtherClientsAddress(ClientRequestAndResponseInformation clientRequestAndResponseInformation){
 		try{
+			clientRequestAndResponseInformation.getOtherClient=1;
 			Socket client= new Socket("localhost",4000);
 			OutputStream outToServer = client.getOutputStream();
 	     	ObjectOutputStream out = new ObjectOutputStream(outToServer);
-			foo.getOther=1;
 			out.writeObject(foo);
 			out.flush();
 			
@@ -62,7 +62,7 @@ class Send{
 }
 
 
-public class Client {
+public class Clients {
 	//Call this method when u want your client to act as server
 	public static void makeServer(int port) {
 		
@@ -130,11 +130,11 @@ public class Client {
 							
 							
 							//Create an object to send and initialize the object to facilitate that transport 
-							Foo foo = new Foo(port);
+							ClientRequestAndResponseInformation clientRequestAndResponseInformation = new ClientRequestAndResponseInformation(port);
 							Send send= new Send();
 							
 							//Description on the method
-							send.sendObject(port,foo);
+							send.sendObject(port,clientRequestAndResponseInformation);
 							
 							//Initialize the port as final so as to pass in the thread so as to make it run on different thread.
 							final int finalPort = port;
@@ -150,7 +150,7 @@ public class Client {
 							sleep(1000);
 							
 							//Get the port of other client.
-							int clientPort = send.getOtherClients(foo);
+							int clientPort = send.getOtherClientsAddress(clientRequestAndResponseInformation);
 							
 							if(clientPort == 0){
 								System.out.println("No client Available");

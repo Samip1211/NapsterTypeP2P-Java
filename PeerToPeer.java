@@ -3,11 +3,11 @@ import java.net.*;
 import java.io.*;
 //The Main Server Class
 
-class Foo implements Serializable{
+class ClientRequestAndResponseInformation implements Serializable{
 	int port;
-	int getOther;
+	int getOtherClient;
 	
-	public Foo(int id){
+	public ClientRequestAndResponseInformation(int id){
 		this.port= id;
 	}
 }
@@ -25,39 +25,34 @@ class MainServer {
 			new Thread(){
 				public void run(){
 				 	try{
-						 //System.out.println("Client Connected");
 						 
 						 ObjectInputStream in = new ObjectInputStream(client.getInputStream());
             			 
-						 Foo foo =(Foo) in.readObject();
+						 ClientRequestAndResponseInformation clientRequestAndResponseInformation =(ClientRequestAndResponseInformation) in.readObject();	
 						 
-						 //clientsAddresses.add(foo.port);
-						 
-						 //System.out.println(foo.port);	
-						 
-						 if(foo.getOther==1){
-							 
-							 for(int clientAddress:clientsAddresses){
-								 if(clientAddress!=foo.port){
-									 try{
-										 ObjectOutputStream outStream = new ObjectOutputStream(client.getOutputStream());
-										 outStream.writeObject(clientAddress);
-										 //
-										 outStream.flush();
-										 
-										 System.out.println("Giving client"+ clientAddress);
-										 outStream.close();
-										 in.close();
-										 break;
-									 }catch(Exception e){
-										 System.out.println(e+ "Problem");
+						 if(clientRequestAndResponseInformation.getOtherClient==1){
+							 try{
+									 for(int clientAddress: clientsAddresses){
+										 if(clientAddress != clientRequestAndResponseInformation.port ){
+											 try{
+												 ObjectOutputStream outStream = new ObjectOutputStream(client.getOutputStream());
+												 outStream.writeObject(clientAddress);
+												 outStream.flush();
+												 System.out.println("Giving client"+ clientAddress);
+												 outStream.close();
+												 in.close();
+												 break;
+											 }catch(Exception e){
+												 System.out.println(e+ "Problem");
+											 }
+										 }
 									 }
-									 
-								 }
+								 }catch(Exception e){
+							 	System.out.println(e+"Null Pointer");
 							 }
+							 
 						 }else{
-								clientsAddresses.add(foo.port);
-								System.out.println(foo.port);
+							 	addToArray(clientRequestAndResponseInformation.port);
 								in.close();
 						 }
 						 
@@ -74,6 +69,12 @@ class MainServer {
 	 		System.out.println(e); //Problem in creating Server Socket
 		}
 	}
+	
+	public synchronized void addToArray(int port){
+		clientsAddresses.add(port);
+		System.out.println(clientsAddresses);
+	}
+	
 }
 public class PeerToPeer{
 	public static void main(String[] args){
