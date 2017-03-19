@@ -5,10 +5,12 @@ import java.io.*;
 class ClientRequestAndResponseInformation implements Serializable{
 	int port;
 	int getOtherClient; //0 means do not get other client address whereas 1 means to get other client address
-	
+	String[] filesPresent;
+	String getFile;
 	public ClientRequestAndResponseInformation(int id){
 		this.port= id;
 	}
+	
 }
 
 class Send{
@@ -18,7 +20,7 @@ class Send{
 	}
 	
 	
-	public synchronized void sendObject(int port,ClientRequestAndResponseInformation clientRequestAndResponseInformation){
+	public synchronized void sendObject(ClientRequestAndResponseInformation clientRequestAndResponseInformation){
 		
 		try{
 			
@@ -26,12 +28,13 @@ class Send{
 			OutputStream outToServer = client.getOutputStream();
 	     	ObjectOutputStream out = new ObjectOutputStream(outToServer);
 			clientRequestAndResponseInformation.getOtherClient=0;
-		 	out.writeObject(foo);
+			clientRequestAndResponseInformation.filesPresent = new String[] {"abc.txt", "xyz.txt" };
+		 	out.writeObject(clientRequestAndResponseInformation);
 			out.flush();
 			out.close();
 			
 		}catch(Exception e){
-			System.out.println(e);
+			System.out.println(e+"Problem in sending");
 			
 		}
 		
@@ -43,7 +46,8 @@ class Send{
 			Socket client= new Socket("localhost",4000);
 			OutputStream outToServer = client.getOutputStream();
 	     	ObjectOutputStream out = new ObjectOutputStream(outToServer);
-			out.writeObject(foo);
+			clientRequestAndResponseInformation.getFile = "abc.txt";
+			out.writeObject(clientRequestAndResponseInformation);
 			out.flush();
 			
 			ObjectInputStream in = new ObjectInputStream(client.getInputStream());
@@ -74,13 +78,22 @@ public class Clients {
 				Socket threadClient= server.accept();
 					//On accepting client request spawn a new Thread
 				new Thread(){
-					public void run(){
+					public synchronized void run(){
 						try{
-						
+							
 							DataInputStream in = new DataInputStream(threadClient.getInputStream());
-				
 							System.out.printf(in.readUTF());
-						
+							
+							File myFile = new File("xyz.txt");
+							byte[] mybytearray = new byte[(int) myFile.length()];
+							BufferedInputStream bis = new BufferedInputStream(new FileInputStream(myFile));
+							bis.read(mybytearray, 0, mybytearray.length);
+							
+							OutputStream os = threadClient.getOutputStream();
+							os.write(mybytearray, 0, mybytearray.length);
+							os.flush();
+							
+				
 						}catch(Exception e){
 							System.out.println(e);
 						}
@@ -97,15 +110,33 @@ public class Clients {
 	}
 	
 	//Call this method when u want to connect to the other client
-	public  static  void connectToClient(int clientPort){
+	public  static  void connectToClient(int serverPort){
 		
 		
 		try{
-			Socket client = new Socket("localhost", clientPort);
+			Socket client = new Socket("localhost", serverPort);
 		    OutputStream outToServer = client.getOutputStream();
 		    DataOutputStream out = new DataOutputStream(outToServer);
          
-		    out.writeUTF("Hello from " + client.getLocalSocketAddress()+ "to" + client.getRemoteSocketAddress()+ "on port" + clientPort +"\n"  );
+		    //out.writeUTF("Hello from " + client.getLocalSocketAddress()+ "to" + client.getRemoteSocketAddress()+ "on port" + serverPort +"\n"  );
+			out.writeUTF(client.getLocalSocketAddress() + " requesting to " + serverPort + "for file" +"\n");
+			
+			byte[] mybytearray = new byte[6022386];
+			InputStream is = client.getInputStream();
+			FileOutputStream fos = new FileOutputStream("pqr.txt");
+		    int bytesRead;
+		    int current = 0;
+			BufferedOutputStream bos = null;
+			bos = new BufferedOutputStream(fos);
+			bytesRead = is.read(mybytearray,0,mybytearray.length);
+			do {
+			        bos.write(mybytearray);
+			        bytesRead = is.read(mybytearray);
+			 } while (bytesRead != -1);
+			
+			bos.flush();
+			
+			client.close();
 		}catch(Exception e){
 			System.out.println(e);
 		}
@@ -114,7 +145,7 @@ public class Clients {
 	public static void main(String[] args){
 		try{
 			//Create Multiple Clients
-			for(int i=0;i<3;i++){
+			for(int i=0;i<1;i++){
 				
 				new Thread(){
 					
@@ -123,7 +154,7 @@ public class Clients {
 							//Get random number and assign it as the port number of the client
 							Random rm= new Random();
 							
-							int port = rm.nextInt(50) + 1;
+							int port = rm.nextInt(200) + 1;
 							if(port < 1000){
 								port+=4000;
 							}
@@ -134,7 +165,7 @@ public class Clients {
 							Send send= new Send();
 							
 							//Description on the method
-							send.sendObject(port,clientRequestAndResponseInformation);
+							send.sendObject(clientRequestAndResponseInformation);
 							
 							//Initialize the port as final so as to pass in the thread so as to make it run on different thread.
 							final int finalPort = port;
@@ -142,20 +173,21 @@ public class Clients {
 							new Thread(){
 								public void run(){
 									makeServer(finalPort);
+									
 								}
 							}.start();
 							
-							System.out.println("After Making Server"); 
+							 
 							//Sleep so that all the client get registered on the index server
 							sleep(1000);
-							
+							System.out.println("After Making Server");
 							//Get the port of other client.
-							int clientPort = send.getOtherClientsAddress(clientRequestAndResponseInformation);
-							
-							if(clientPort == 0){
+							int serverPort = send.getOtherClientsAddress(clientRequestAndResponseInformation);
+							System.out.println("Got from Server" + serverPort);
+							if(serverPort == 0 || serverPort == 4000 ){
 								System.out.println("No client Available");
 							}else{
-								connectToClient(clientPort);
+								connectToClient(serverPort);
 							}	
 							
 						}catch(Exception e){

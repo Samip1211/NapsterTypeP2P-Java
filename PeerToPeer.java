@@ -6,14 +6,45 @@ import java.io.*;
 class ClientRequestAndResponseInformation implements Serializable{
 	int port;
 	int getOtherClient;
-	
+	String[] filesPresent;
+	String getFile;
 	public ClientRequestAndResponseInformation(int id){
 		this.port= id;
 	}
+	
 }
 
 class MainServer {
-	List<Integer> clientsAddresses = new ArrayList<Integer>();
+	List<ClientRequestAndResponseInformation> clientsInformation = new ArrayList<ClientRequestAndResponseInformation>();
+	
+	public synchronized int returnAddressForFile(ClientRequestAndResponseInformation client){
+		for(int i=0;i<clientsInformation.size();i++){
+			
+			if(clientsInformation.get(i).port != client.port){
+				
+				if(Arrays.asList(clientsInformation.get(i).filesPresent).contains(client.getFile)){
+					return  clientsInformation.get(i).port;
+				}
+			}else{
+				return 4000;
+			}
+			
+		}
+		return 4000;
+	}
+	
+	public synchronized void  sendToClient(OutputStream outPutStream,int clientAddress){
+		try{
+		 	ObjectOutputStream outStream = new ObjectOutputStream(outPutStream);
+		 	outStream.writeObject(clientAddress);
+		 	outStream.flush();
+		 	System.out.println("Giving client"+ clientAddress);
+		 	
+		}catch(Exception e){
+			System.out.println(e+ "Problem");
+		}
+	 	
+	}
 	
 	public void makeServerSocket(int port){
 		try{
@@ -23,7 +54,7 @@ class MainServer {
 			Socket client = server.accept();
 			//On accepting client request spawn a new Thread
 			new Thread(){
-				public void run(){
+				public synchronized void run(){
 				 	try{
 						 
 						 ObjectInputStream in = new ObjectInputStream(client.getInputStream());
@@ -31,35 +62,16 @@ class MainServer {
 						 ClientRequestAndResponseInformation clientRequestAndResponseInformation =(ClientRequestAndResponseInformation) in.readObject();	
 						 
 						 if(clientRequestAndResponseInformation.getOtherClient==1){
-							 try{
-									 for(int clientAddress: clientsAddresses){
-										 if(clientAddress != clientRequestAndResponseInformation.port ){
-											 try{
-												 ObjectOutputStream outStream = new ObjectOutputStream(client.getOutputStream());
-												 outStream.writeObject(clientAddress);
-												 outStream.flush();
-												 System.out.println("Giving client"+ clientAddress);
-												 outStream.close();
-												 in.close();
-												 break;
-											 }catch(Exception e){
-												 System.out.println(e+ "Problem");
-											 }
-										 }
-									 }
-								 }catch(Exception e){
-							 	System.out.println(e+"Null Pointer");
-							 }
-							 
+							 int addressToSend= returnAddressForFile(clientRequestAndResponseInformation);
+							 sendToClient(client.getOutputStream(),addressToSend);
+							 //server.close();
 						 }else{
-							 	addToArray(clientRequestAndResponseInformation.port);
+							 	addToArray(clientRequestAndResponseInformation);
 								in.close();
-						 }
-						 
-						 	
-					 	
+						}
+						
 					}catch(Exception e){
-					 	System.out.println(e); //Thread Running error
+					 	System.out.println(e+"Problem here"); //Thread Running error
 				 	}
 			 	}
 		 	}.start(); //Start the thread
@@ -70,9 +82,9 @@ class MainServer {
 		}
 	}
 	
-	public synchronized void addToArray(int port){
-		clientsAddresses.add(port);
-		System.out.println(clientsAddresses);
+	public synchronized void addToArray(ClientRequestAndResponseInformation clientRequestAndResponseInformation){
+		clientsInformation.add(clientRequestAndResponseInformation);
+		System.out.println(clientRequestAndResponseInformation.port);
 	}
 	
 }
