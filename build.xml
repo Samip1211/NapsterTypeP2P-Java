@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<project name="PeerToPeer" default="all" basedir=".">
+
+<target name="all" depends="compile,run"/>
+<target  name="compile">
+       <javac srcdir="." includeantruntime="false" includes="PeerToPeer.java" destdir=".">
+       </javac>
+</target>
+
+<target name="run" depends="compile">
+       <java classname="PeerToPeer" fork="true">
+       </java>
+</target>
+
+</project>

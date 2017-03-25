@@ -5,10 +5,22 @@ import java.io.*;
 class ClientRequestAndResponseInformation implements Serializable{
 	int port;
 	int getOtherClient; //0 means do not get other client address whereas 1 means to get other client address
-	String[] filesPresent;
+	List<String> filesPresent;
 	String getFile;
 	public ClientRequestAndResponseInformation(int id){
 		this.port= id;
+		filesPresent = new ArrayList<String>();
+		File folder = new File(System.getProperty("user.dir"));
+		File[] listOfFiles = folder.listFiles();
+		
+		for (int i = 0; i < listOfFiles.length; i++) {
+		      if (listOfFiles[i].isFile()) {
+				  filesPresent.add(listOfFiles[i].getName());
+		        //System.out.println("File " + listOfFiles[i].getName());
+		      } else if (listOfFiles[i].isDirectory()) {
+		        //System.out.println("Directory " + listOfFiles[i].getName());
+		      }
+		    }
 	}
 	
 }
@@ -28,8 +40,7 @@ class Send{
 			OutputStream outToServer = client.getOutputStream();
 	     	ObjectOutputStream out = new ObjectOutputStream(outToServer);
 			clientRequestAndResponseInformation.getOtherClient=0;
-			clientRequestAndResponseInformation.filesPresent = new String[] {"abc.txt", "xyz.txt" };
-		 	out.writeObject(clientRequestAndResponseInformation);
+			out.writeObject(clientRequestAndResponseInformation);
 			out.flush();
 			out.close();
 			
@@ -47,6 +58,7 @@ class Send{
 			OutputStream outToServer = client.getOutputStream();
 	     	ObjectOutputStream out = new ObjectOutputStream(outToServer);
 			clientRequestAndResponseInformation.getFile = "abc.txt";
+			
 			out.writeObject(clientRequestAndResponseInformation);
 			out.flush();
 			
@@ -67,6 +79,8 @@ class Send{
 
 
 public class Clients {
+	static String fileToGet;
+	
 	//Call this method when u want your client to act as server
 	public static void makeServer(int port) {
 		
@@ -81,10 +95,12 @@ public class Clients {
 					public synchronized void run(){
 						try{
 							
-							DataInputStream in = new DataInputStream(threadClient.getInputStream());
-							System.out.printf(in.readUTF());
+							ObjectInputStream in = new ObjectInputStream(threadClient.getInputStream());
 							
-							File myFile = new File("xyz.txt");
+							String fileName= (String) in.readObject();
+							System.out.println("File NAme" + fileName);
+							File myFile = new File(fileName);
+							System.out.println(myFile.length());
 							byte[] mybytearray = new byte[(int) myFile.length()];
 							BufferedInputStream bis = new BufferedInputStream(new FileInputStream(myFile));
 							bis.read(mybytearray, 0, mybytearray.length);
@@ -116,14 +132,15 @@ public class Clients {
 		try{
 			Socket client = new Socket("localhost", serverPort);
 		    OutputStream outToServer = client.getOutputStream();
-		    DataOutputStream out = new DataOutputStream(outToServer);
+		    ObjectOutputStream out = new ObjectOutputStream(outToServer);
          
 		    //out.writeUTF("Hello from " + client.getLocalSocketAddress()+ "to" + client.getRemoteSocketAddress()+ "on port" + serverPort +"\n"  );
-			out.writeUTF(client.getLocalSocketAddress() + " requesting to " + serverPort + "for file" +"\n");
+			System.out.println("File to Get" + fileToGet);
+			out.writeObject(fileToGet);
 			
 			byte[] mybytearray = new byte[6022386];
 			InputStream is = client.getInputStream();
-			FileOutputStream fos = new FileOutputStream("pqr.txt");
+			FileOutputStream fos = new FileOutputStream(fileToGet);
 		    int bytesRead;
 		    int current = 0;
 			BufferedOutputStream bos = null;
@@ -143,6 +160,9 @@ public class Clients {
 	}
 	
 	public static void main(String[] args){
+		if(args.length>=1){
+			fileToGet= args[0];
+		}
 		try{
 			//Create Multiple Clients
 			for(int i=0;i<1;i++){
@@ -162,6 +182,7 @@ public class Clients {
 							
 							//Create an object to send and initialize the object to facilitate that transport 
 							ClientRequestAndResponseInformation clientRequestAndResponseInformation = new ClientRequestAndResponseInformation(port);
+							
 							Send send= new Send();
 							
 							//Description on the method
@@ -188,7 +209,7 @@ public class Clients {
 								System.out.println("No client Available");
 							}else{
 								connectToClient(serverPort);
-							}	
+							}
 							
 						}catch(Exception e){
 							System.out.println(e); //catch any error in the above process

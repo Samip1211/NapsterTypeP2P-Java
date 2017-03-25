@@ -6,10 +6,22 @@ import java.io.*;
 class ClientRequestAndResponseInformation implements Serializable{
 	int port;
 	int getOtherClient;
-	String[] filesPresent;
+	List<String>  filesPresent;
 	String getFile;
 	public ClientRequestAndResponseInformation(int id){
 		this.port= id;
+		filesPresent = new ArrayList<String>();
+		File folder = new File(System.getProperty("user.dir"));
+		File[] listOfFiles = folder.listFiles();
+		
+		for (int i = 0; i < listOfFiles.length; i++) {
+		      if (listOfFiles[i].isFile()) {
+				  filesPresent.add(listOfFiles[i].getName());
+		        //System.out.println("File " + listOfFiles[i].getName());
+		      } else if (listOfFiles[i].isDirectory()) {
+		        //System.out.println("Directory " + listOfFiles[i].getName());
+		      }
+		    }
 	}
 	
 }
@@ -18,17 +30,17 @@ class MainServer {
 	List<ClientRequestAndResponseInformation> clientsInformation = new ArrayList<ClientRequestAndResponseInformation>();
 	
 	public synchronized int returnAddressForFile(ClientRequestAndResponseInformation client){
+		
 		for(int i=0;i<clientsInformation.size();i++){
 			
 			if(clientsInformation.get(i).port != client.port){
 				
-				if(Arrays.asList(clientsInformation.get(i).filesPresent).contains(client.getFile)){
-					return  clientsInformation.get(i).port;
+				for(String fileName : clientsInformation.get(i).filesPresent){
+					if(fileName.equals(client.getFile)){
+						return clientsInformation.get(i).port;
+					}
 				}
-			}else{
-				return 4000;
 			}
-			
 		}
 		return 4000;
 	}
@@ -85,6 +97,7 @@ class MainServer {
 	public synchronized void addToArray(ClientRequestAndResponseInformation clientRequestAndResponseInformation){
 		clientsInformation.add(clientRequestAndResponseInformation);
 		System.out.println(clientRequestAndResponseInformation.port);
+		System.out.println(clientRequestAndResponseInformation.filesPresent);
 	}
 	
 }
