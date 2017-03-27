@@ -2,8 +2,9 @@ import java.util.*;
 import java.net.*;
 import java.io.*;
 
+//Object describing the client which is stored in server
 class ClientRequestAndResponseInformation implements Serializable{
-	int port;
+	int port; // Port of the client
 	int getOtherClient; //0 means do not get other client address whereas 1 means to get other client address
 	List<String> filesPresent;
 	String getFile;
@@ -13,6 +14,7 @@ class ClientRequestAndResponseInformation implements Serializable{
 		File folder = new File(System.getProperty("user.dir"));
 		File[] listOfFiles = folder.listFiles();
 		
+		//Get the files present in the directory
 		for (int i = 0; i < listOfFiles.length; i++) {
 		      if (listOfFiles[i].isFile()) {
 				  filesPresent.add(listOfFiles[i].getName());
@@ -24,14 +26,14 @@ class ClientRequestAndResponseInformation implements Serializable{
 	}
 	
 }
-
+//Class used by client to make request to server 
 class Send{
 	
 	public Send(){
 		
 	}
 	
-	
+	//Method used when the client wants to register itself on the server
 	public synchronized void sendObject(ClientRequestAndResponseInformation clientRequestAndResponseInformation){
 		
 		try{
@@ -51,13 +53,14 @@ class Send{
 		
 	}
 	
-	public synchronized int getOtherClientsAddress(ClientRequestAndResponseInformation clientRequestAndResponseInformation){
+	//Method used when the client wants to get the information about other client to get the file
+	public synchronized int getOtherClientsAddress(ClientRequestAndResponseInformation clientRequestAndResponseInformation,String fileToGet){
 		try{
 			clientRequestAndResponseInformation.getOtherClient=1;
 			Socket client= new Socket("localhost",4000);
 			OutputStream outToServer = client.getOutputStream();
 	     	ObjectOutputStream out = new ObjectOutputStream(outToServer);
-			clientRequestAndResponseInformation.getFile = "abc.txt";
+			clientRequestAndResponseInformation.getFile = fileToGet;
 			
 			out.writeObject(clientRequestAndResponseInformation);
 			out.flush();
@@ -94,11 +97,15 @@ public class Clients {
 				new Thread(){
 					public synchronized void run(){
 						try{
-							
+							//Get the current time
+							long start = System.currentTimeMillis();
+							//Read the object stream
 							ObjectInputStream in = new ObjectInputStream(threadClient.getInputStream());
-							
+							//Get the file to send to the other client
 							String fileName= (String) in.readObject();
+							//Print the file name of the file requested
 							System.out.println("File NAme" + fileName);
+							//Initalize file object and write in the outputstream
 							File myFile = new File(fileName);
 							System.out.println(myFile.length());
 							byte[] mybytearray = new byte[(int) myFile.length()];
@@ -108,7 +115,11 @@ public class Clients {
 							OutputStream os = threadClient.getOutputStream();
 							os.write(mybytearray, 0, mybytearray.length);
 							os.flush();
-							
+							in.close();
+							//Get the time difference from the initialization of the thread till now
+							long end = System.currentTimeMillis( );
+							 long diff = end - start;
+							  System.out.println("Difference is : " + diff + " "+ start + "  "+ end);
 				
 						}catch(Exception e){
 							System.out.println(e);
@@ -130,11 +141,15 @@ public class Clients {
 		
 		
 		try{
+			//Connect to other client
 			Socket client = new Socket("localhost", serverPort);
+			//Start the time
+			long start = System.currentTimeMillis();
+			//Get the output stream
 		    OutputStream outToServer = client.getOutputStream();
 		    ObjectOutputStream out = new ObjectOutputStream(outToServer);
          
-		    //out.writeUTF("Hello from " + client.getLocalSocketAddress()+ "to" + client.getRemoteSocketAddress()+ "on port" + serverPort +"\n"  );
+		   	//Print the file name of the file which is being requested and savre the file
 			System.out.println("File to Get" + fileToGet);
 			out.writeObject(fileToGet);
 			
@@ -154,6 +169,10 @@ public class Clients {
 			bos.flush();
 			
 			client.close();
+			//Get the difference between the connection of other client and getting the file
+			long end = System.currentTimeMillis( );
+			long diff = end - start;
+			System.out.println("Difference is : " + diff);
 		}catch(Exception e){
 			System.out.println(e);
 		}
@@ -203,7 +222,7 @@ public class Clients {
 							sleep(1000);
 							System.out.println("After Making Server");
 							//Get the port of other client.
-							int serverPort = send.getOtherClientsAddress(clientRequestAndResponseInformation);
+							int serverPort = send.getOtherClientsAddress(clientRequestAndResponseInformation,fileToGet);
 							System.out.println("Got from Server" + serverPort);
 							if(serverPort == 0 || serverPort == 4000 ){
 								System.out.println("No client Available");

@@ -9,7 +9,17 @@
 
 <target name="run" depends="compile">
        <java classname="PeerToPeer" fork="true">
+		   
        </java>
 </target>
+<target name="clean">
+    
+    <delete>
+      <fileset dir=".">
+        <include name="*.class"/>
+        
+      </fileset>
+    </delete>
+  </target>
 
 </project>

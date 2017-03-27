@@ -3,10 +3,11 @@ import java.net.*;
 import java.io.*;
 //The Main Server Class
 
+//Object describing the client which is stored in server
 class ClientRequestAndResponseInformation implements Serializable{
-	int port;
-	int getOtherClient;
-	List<String>  filesPresent;
+	int port; // Port of the client
+	int getOtherClient; //0 means do not get other client address whereas 1 means to get other client address
+	List<String> filesPresent;
 	String getFile;
 	public ClientRequestAndResponseInformation(int id){
 		this.port= id;
@@ -14,6 +15,7 @@ class ClientRequestAndResponseInformation implements Serializable{
 		File folder = new File(System.getProperty("user.dir"));
 		File[] listOfFiles = folder.listFiles();
 		
+		//Get the files present in the directory
 		for (int i = 0; i < listOfFiles.length; i++) {
 		      if (listOfFiles[i].isFile()) {
 				  filesPresent.add(listOfFiles[i].getName());
@@ -29,8 +31,9 @@ class ClientRequestAndResponseInformation implements Serializable{
 class MainServer {
 	List<ClientRequestAndResponseInformation> clientsInformation = new ArrayList<ClientRequestAndResponseInformation>();
 	
+	//Method called when one client asks for the information of other client
 	public synchronized int returnAddressForFile(ClientRequestAndResponseInformation client){
-		
+		//Use the simple search algorithm to search for the neccessary file
 		for(int i=0;i<clientsInformation.size();i++){
 			
 			if(clientsInformation.get(i).port != client.port){
@@ -45,6 +48,7 @@ class MainServer {
 		return 4000;
 	}
 	
+	//Method called so as to call the other client
 	public synchronized void  sendToClient(OutputStream outPutStream,int clientAddress){
 		try{
 		 	ObjectOutputStream outStream = new ObjectOutputStream(outPutStream);
@@ -75,6 +79,7 @@ class MainServer {
 						 
 						 if(clientRequestAndResponseInformation.getOtherClient==1){
 							 int addressToSend= returnAddressForFile(clientRequestAndResponseInformation);
+							 System.out.println("Got from client " + clientRequestAndResponseInformation.getFile );
 							 sendToClient(client.getOutputStream(),addressToSend);
 							 //server.close();
 						 }else{
