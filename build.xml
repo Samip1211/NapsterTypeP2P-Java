@@ -1,15 +1,24 @@
 <?xml version="1.0"?>
 <project name="PeerToPeer" default="all" basedir=".">
 
-<target name="all" depends="compile,run"/>
+<target name="all" depends="compile,run,runClient,compileClient"/>
 <target  name="compile">
        <javac srcdir="." includeantruntime="false" includes="PeerToPeer.java" destdir=".">
+       </javac>
+</target>
+<target  name="compileClient">
+       <javac srcdir="." includeantruntime="false" includes="Clients.java" destdir=".">
        </javac>
 </target>
 
 <target name="run" depends="compile">
        <java classname="PeerToPeer" fork="true">
 		   
+       </java>
+</target>
+<target name="runClient" depends="compileClient">
+       <java classname="Clients" fork="true">
+		   <arg value="${value1}"/>
        </java>
 </target>
 <target name="clean">
